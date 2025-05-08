@@ -1,13 +1,10 @@
 const express = require('express');
-const cors = require('cors');
 const app = express();
-const stockRoutes = require('./routes/stock.js');
+const cors = require('cors');
+const apiRoutes = require('./routes/api.js'); // Suponiendo que ese es el archivo
 
 app.use(cors());
 app.use(express.json());
+app.use('/', apiRoutes);
 
-app.use('/api/stock', stockRoutes);
-
-app.listen(3001, () => {
-  console.log('Servidor backend en puerto 3001');
-});
+app.listen(3001, () => console.log('Servidor corriendo en http://localhost:3001'));
