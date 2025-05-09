@@ -24,7 +24,7 @@ const LoanForm = () => {
     e.preventDefault();
     await axios.post('http://localhost:3001/loans', form);
     alert('Préstamo registrado');
-    setForm({ tool_id: '', technician_id: '', cantidad: '', comentario: '' });
+    setForm({ tool_id: '', technician_id: '', cantidad: '', comentario: '', fecha_devolucion: '' });
   };
 
   return (
@@ -56,6 +56,14 @@ const LoanForm = () => {
         value={form.comentario}
         onChange={handleChange}
         placeholder="Comentario"
+        className="form-control mb-2"
+      />
+      <input
+        type="date"
+        name="fecha_devolucion"
+        value={form.fecha_devolucion}
+        onChange={handleChange}
+        placeholder="Fecha de devolución"
         className="form-control mb-2"
       />
       <button className="btn btn-primary" type="submit">Guardar</button>

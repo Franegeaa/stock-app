@@ -47,20 +47,122 @@ db.serialize(() => {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS stock (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  herramienta TEXT NOT NULL,
+  cantidad INT NOT NULL
+  )
+  `);  
   console.log("Tablas creadas o verificadas correctamente.");
 });
 
 router.get('/loans', (req, res) => {
   const sql = `
-    SELECT loans.*, tools.name as tool_name, technicians.name as technician_name
+    SELECT 
+      loans.id,
+      tools.name AS herramienta,
+      technicians.name AS tecnico,
+      loans.cantidad,
+      loans.fecha_prestamo,
+      loans.fecha_devolucion,
+      loans.comentario
     FROM loans
     JOIN tools ON loans.tool_id = tools.id
     JOIN technicians ON loans.technician_id = technicians.id
-    ORDER BY fecha_prestamo DESC
+    ORDER BY loans.fecha_prestamo DESC
   `;
+
   db.all(sql, [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
+  });
+});
+
+router.get('/stock', async (req, res) => {
+  db.all('SELECT * FROM stock', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+router.post('/stock', async (req, res) => {
+  const { herramienta, cantidad } = req.body;
+  const sql = `
+    INSERT INTO stock (herramienta, cantidad)
+    VALUES (?, ?)
+  `;
+  const params = [herramienta, cantidad];
+  db.run(sql, params, function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(201).json({ message: 'Herramienta agregada', id: this.lastID });
+  })
+});
+
+router.put('/stock/:id', async (req, res) => {
+  const { id } = req.params;
+  const { cantidad } = req.body;
+
+  db.run(
+    'UPDATE stock SET cantidad = ? WHERE id = ?',
+    [cantidad, id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (this.changes === 0) return res.status(404).json({ error: 'Registro no encontrado' });
+
+      // Si el registro se actualizó, devuelve el objeto actualizado
+      db.get('SELECT * FROM stock WHERE id = ?', [id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(row);
+      });
+    }
+  );
+});
+
+router.delete('/stock/:id', async (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM stock WHERE id = ?', [id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: 'Registro no encontrado' });
+    res.sendStatus(204);
+  });
+});
+
+router.post('/technicians', (req, res) => {
+  const { name, email, telefono } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'El nombre es obligatorio' });
+  }
+
+  const sql = `
+    INSERT INTO technicians (name, email, telefono)
+    VALUES (?, ?, ?)
+  `;
+  const params = [name, email, telefono];
+
+  db.run(sql, params, function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(201).json({ message: 'Técnico agregado', id: this.lastID });
+  });
+});
+
+router.post('/tools', (req, res) => {
+  const { name, description, stock_total } = req.body;
+
+  if (!name || stock_total == null) {
+    return res.status(400).json({ error: 'Nombre y stock_total son obligatorios' });
+  }
+
+  const sql = `
+    INSERT INTO tools (name, description, stock_total)
+    VALUES (?, ?, ?)
+  `;
+  const params = [name, description, stock_total];
+
+  db.run(sql, params, function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(201).json({ message: 'Herramienta agregada', id: this.lastID });
   });
 });
 
